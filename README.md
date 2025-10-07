@@ -175,3 +175,76 @@ This project aims to:
 
 ---
 
+# 3. Defective Coffee Bean Classification Using EfficientNet
+
+##  Project Overview
+- **Course**: T-SUM Data Analysis Contest (3th Year, 2nd Semester, Korea University Sejong Campus)  
+- **Period**: September 2024 – December 2024  
+- **Goal**: To develop a deep learning–based classification model that automatically distinguishes defective coffee beans from normal ones using EfficientNet.  
+- **Members**: Dongnam Yoo, Seokbeom Kim, Sooho Kim
+
+---
+
+##  Background & Objective
+Manual inspection of defective beans is still common in cafés,  
+which requires significant time, labor, and is prone to human error.  
+
+This project aims to:
+1. Automate the classification of defective beans using deep learning,  
+2. Apply **EfficientNet** for high-accuracy classification with minimal parameters,  
+3. Compare human vs. AI performance to evaluate practical applicability.  
+
+---
+
+##  Data Preprocessing
+1. **Background Removal** — Used U²-Net–based `rembg` to remove non-bean backgrounds.  
+2. **Padding** — Added black padding to make images square.  
+3. **Resizing** — Unified all images to **224×224 pixels** (EfficientNet input size).  
+4. **Augmentation** — Flipped horizontally and vertically to expand dataset 4×.  
+   - 500 normal beans + 500 defective beans → 4000 images in total.  
+
+---
+
+##  Model & Training
+- **Architecture**: EfficientNet-B0 (Google AI, 2019)  
+- **Key Features**:  
+  - Depthwise Separable Convolution  
+  - Squeeze-and-Excitation Network  
+  - Compound Scaling for parameter efficiency  
+- **Training Settings**:  
+  - Optimizer: Adam  
+  - Loss: Binary Cross Entropy  
+  - Epochs: 50  
+  - Input Size: 224×224  
+- **Metrics**: Accuracy, Precision, Recall, F1, ROC-AUC  
+
+---
+
+##  Results & Analysis
+| Category | Precision | Recall | F1-score | Accuracy |
+|-----------|------------|---------|-----------|-----------|
+| Model (EfficientNet) | **0.9477** | **0.955** | 0.951 | 0.945 |
+| Human (Average) | 0.899 | 0.899 | 0.899 | 0.935 |
+
+- The model achieved **higher recall (95.5%) and precision (94.8%)** than human participants.  
+- Confusion Matrix and ROC Curve demonstrated stable performance.  
+- Train vs. Test loss curves converged smoothly without overfitting.  
+
+---
+
+##  Conclusion
+- The EfficientNet-based model successfully classified defective beans **beyond human-level accuracy**.  
+- Demonstrates the **potential for automation** in coffee quality control.  
+- Reduces manual labor and error in the inspection process.  
+
+---
+
+##  Limitations & Future Work
+1. **Limited Dataset Diversity** — Images sourced from a single café.  
+2. **Labeling Uncertainty** — Ground truth labeled manually; may contain noise.  
+3. **Next Steps**  
+   - Expand dataset across multiple cafés.  
+   - Explore newer architectures (EfficientNetV2, ConvNeXt).  
+   - Enhance label reliability via expert verification.  
+
+---
