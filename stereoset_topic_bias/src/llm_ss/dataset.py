@@ -42,7 +42,7 @@ def detect_split_name(split_names: Iterable[str]) -> str:
     return names[0]
 
 
-def _normalize_label(label: Any) -> str | None:
+def normalize_gold_label(label: Any) -> str | None:
     """
     Normalize StereoSet gold_label to one of:
       - stereotype
@@ -56,10 +56,20 @@ def _normalize_label(label: Any) -> str | None:
     if label is None:
         return None
 
-    # direct int mapping (including numpy ints which are int-like)
+    # direct int mapping
     try:
         if isinstance(label, int):
             return LABEL_ID_TO_NAME.get(label)
+    except Exception:
+        pass
+
+    # numpy integer scalars should map like python ints
+    try:
+        normalized_int = int(label)
+        if str(label).strip() == str(normalized_int):
+            mapped = LABEL_ID_TO_NAME.get(normalized_int)
+            if mapped is not None:
+                return mapped
     except Exception:
         pass
 
@@ -100,14 +110,14 @@ def map_candidates_from_row(row: dict) -> dict[str, str] | None:
         labels = sentences.get("gold_label", [])
         texts = sentences.get("sentence", [])
         for lbl, txt in zip(labels, texts):
-            pairs.append((_normalize_label(lbl), str(txt)))
+            pairs.append((normalize_gold_label(lbl), str(txt)))
 
     # Case 2) list-of-dicts (keep support just in case)
     elif isinstance(sentences, list):
         for item in sentences:
             if not isinstance(item, dict):
                 continue
-            pairs.append((_normalize_label(item.get("gold_label")), str(item.get("sentence", ""))))
+            pairs.append((normalize_gold_label(item.get("gold_label")), str(item.get("sentence", ""))))
 
     else:
         return None

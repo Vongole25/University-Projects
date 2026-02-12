@@ -16,3 +16,20 @@ def test_map_candidates_handles_shuffled_gold_label_order():
         "anti-stereotype": "B",
         "unrelated": "C",
     }
+
+
+def test_map_candidates_handles_numeric_gold_label_ids_dict_of_lists():
+    row = {
+        "sentences": {
+            "gold_label": [0, 1, 2],
+            "sentence": ["A", "B", "C"],
+        }
+    }
+
+    mapped = map_candidates_from_row(row)
+
+    assert mapped == {
+        "stereotype": "A",
+        "anti-stereotype": "B",
+        "unrelated": "C",
+    }
