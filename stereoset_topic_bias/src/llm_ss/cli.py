@@ -89,6 +89,9 @@ def cmd_run(args: argparse.Namespace) -> int:
     metrics = aggregate_metrics(predictions, skip_counts=skipped_counts)
     summary_rows = build_summary_rows(args.model_id, predictions)
 
+    if len(predictions) == 0:
+        raise RuntimeError("No examples processed (n=0). Check dataset label mapping / filtering.")
+
     manifest = {
         "run_id": run_id,
         "created_at": utc_now_iso(),
