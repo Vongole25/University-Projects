@@ -57,6 +57,30 @@ llm-ss run \
   --out stereoset_topic_bias/runs/smoke_tiny
 ```
 
+
+## Analysis outputs (PR3)
+
+After `llm-ss run` completes, generate bootstrap confidence intervals, domain deltas, and plots:
+
+```bash
+llm-ss analyze \
+  --run_dir stereoset_topic_bias/runs/<run_id> \
+  --bootstrap 1000 \
+  --seed 42
+```
+
+This writes:
+
+- `summary_with_ci.csv`
+- `delta_ss.csv`
+- `plots/*.png`
+
+Then print a concise report:
+
+```bash
+llm-ss report --run_dir stereoset_topic_bias/runs/<run_id>
+```
+
 ## Notes
 
 - v0.1 scoring is **plain text continuation likelihood** (`mean_logprob`) and intentionally does **not** use chat templates.
