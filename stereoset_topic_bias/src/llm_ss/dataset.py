@@ -1,11 +1,19 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Iterable
+from typing import Iterable, Any
 
 
 DATASET_NAME = "McGill-NLP/stereoset"
 REQUIRED_LABELS = {"stereotype", "anti-stereotype", "unrelated"}
+
+# StereoSet HF dataset often uses numeric gold_label ids:
+# 0=stereotype, 1=anti-stereotype, 2=unrelated
+LABEL_ID_TO_NAME = {
+    0: "stereotype",
+    1: "anti-stereotype",
+    2: "unrelated",
+}
 
 
 @dataclass
@@ -34,8 +42,50 @@ def detect_split_name(split_names: Iterable[str]) -> str:
     return names[0]
 
 
-def _normalize_label(label: str) -> str:
-    return str(label).strip().lower()
+def _normalize_label(label: Any) -> str | None:
+    """
+    Normalize StereoSet gold_label to one of:
+      - stereotype
+      - anti-stereotype
+      - unrelated
+    StereoSet gold_label may be:
+      - int (0/1/2)
+      - numeric strings ("0"/"1"/"2")
+      - already string labels
+    """
+    if label is None:
+        return None
+
+    # direct int mapping (including numpy ints which are int-like)
+    try:
+        if isinstance(label, int):
+            return LABEL_ID_TO_NAME.get(label)
+    except Exception:
+        pass
+
+    s = str(label).strip().lower()
+    if not s:
+        return None
+
+    # numeric string mapping
+    if s.isdigit():
+        try:
+            return LABEL_ID_TO_NAME.get(int(s))
+        except Exception:
+            return None
+
+    # already a label string (or close variants)
+    if s in REQUIRED_LABELS:
+        return s
+    if s in ("anti", "antistereotype", "anti_stereotype", "anti-stereotype"):
+        return "anti-stereotype"
+    if s in ("stereo", "stereotypical", "stereotype"):
+        return "stereotype"
+    if s in ("unrel", "unrelated"):
+        return "unrelated"
+
+    # unknown label
+    return None
 
 
 def map_candidates_from_row(row: dict) -> dict[str, str] | None:
@@ -43,23 +93,38 @@ def map_candidates_from_row(row: dict) -> dict[str, str] | None:
     if sentences is None:
         return None
 
-    pairs: list[tuple[str, str]] = []
+    pairs: list[tuple[str | None, str]] = []
+
+    # Case 1) dict-of-lists (this is what HF StereoSet returns)
     if isinstance(sentences, dict):
         labels = sentences.get("gold_label", [])
         texts = sentences.get("sentence", [])
-        pairs = [(_normalize_label(label), str(text)) for label, text in zip(labels, texts)]
+        for lbl, txt in zip(labels, texts):
+            pairs.append((_normalize_label(lbl), str(txt)))
+
+    # Case 2) list-of-dicts (keep support just in case)
     elif isinstance(sentences, list):
         for item in sentences:
-            pairs.append((_normalize_label(item.get("gold_label", "")), str(item.get("sentence", ""))))
+            if not isinstance(item, dict):
+                continue
+            pairs.append((_normalize_label(item.get("gold_label")), str(item.get("sentence", ""))))
+
+    else:
+        return None
 
     label_to_text: dict[str, str] = {}
     for label, text in pairs:
+        if label is None:
+            # unknown label -> invalid example for v0.1
+            return None
         if label not in REQUIRED_LABELS:
             return None
         label_to_text[label] = text
 
+    # must contain all 3 exactly (one each)
     if set(label_to_text.keys()) != REQUIRED_LABELS:
         return None
+
     return label_to_text
 
 
