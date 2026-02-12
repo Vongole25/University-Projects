@@ -1,12 +1,15 @@
 from __future__ import annotations
 
 import argparse
+import csv
 import json
 from pathlib import Path
 
+from .analysis import bootstrap_ci, delta_ss_bootstrap, group_examples, load_predictions, read_model_id
 from .dataset import DATASET_NAME, load_stereoset_subset
 from .io import ensure_run_layout, write_json, write_jsonl, write_summary_csv
 from .metrics import aggregate_metrics, build_summary_rows
+from .plots import plot_ss_bars, plot_ss_heatmap
 from .scorer import CausalLMScorer, build_prefix_and_continuation
 from .utils import generate_run_id, get_git_commit, set_seed, utc_now_iso
 
@@ -123,34 +126,149 @@ def cmd_analyze(args: argparse.Namespace) -> int:
     run_dir = Path(args.run_dir)
     layout = ensure_run_layout(run_dir)
 
-    metrics = {
-        "status": "analyze_bootstrap",
+    preds = load_predictions(run_dir)
+    groups = group_examples(preds)
+    model_id = read_model_id(run_dir)
+
+    summary_rows: list[dict] = []
+    for (subset, domain), examples in sorted(groups.items()):
+        stats = bootstrap_ci(examples, B=args.bootstrap, seed=args.seed)
+        summary_rows.append(
+            {
+                "model_id": model_id,
+                "subset": subset,
+                "domain": domain,
+                "n": stats["n"],
+                "lms": round(float(stats["lms"]), 6),
+                "lms_ci_low": round(float(stats["lms_ci_low"]), 6),
+                "lms_ci_high": round(float(stats["lms_ci_high"]), 6),
+                "ss": round(float(stats["ss"]), 6),
+                "ss_ci_low": round(float(stats["ss_ci_low"]), 6),
+                "ss_ci_high": round(float(stats["ss_ci_high"]), 6),
+                "icat": round(float(stats["icat"]), 6),
+                "icat_ci_low": round(float(stats["icat_ci_low"]), 6),
+                "icat_ci_high": round(float(stats["icat_ci_high"]), 6),
+            }
+        )
+
+    delta_rows: list[dict] = []
+    for subset in ["intersentence", "intrasentence"]:
+        domains = sorted({domain for (row_subset, domain) in groups if row_subset == subset})
+        for i, domain_a in enumerate(domains):
+            for domain_b in domains[i + 1 :]:
+                delta = delta_ss_bootstrap(
+                    groups[(subset, domain_a)],
+                    groups[(subset, domain_b)],
+                    B=args.bootstrap,
+                    seed=args.seed,
+                )
+                delta_rows.append(
+                    {
+                        "subset": subset,
+                        "domain_a": domain_a,
+                        "domain_b": domain_b,
+                        "delta_ss": round(float(delta["delta_ss"]), 6),
+                        "ci_low": round(float(delta["ci_low"]), 6),
+                        "ci_high": round(float(delta["ci_high"]), 6),
+                        "significant": bool(delta["significant"]),
+                    }
+                )
+
+    summary_with_ci_path = run_dir / "summary_with_ci.csv"
+    write_summary_csv(
+        summary_with_ci_path,
+        summary_rows,
+        fieldnames=[
+            "model_id",
+            "subset",
+            "domain",
+            "n",
+            "lms",
+            "lms_ci_low",
+            "lms_ci_high",
+            "ss",
+            "ss_ci_low",
+            "ss_ci_high",
+            "icat",
+            "icat_ci_low",
+            "icat_ci_high",
+        ],
+    )
+
+    delta_ss_path = run_dir / "delta_ss.csv"
+    write_summary_csv(
+        delta_ss_path,
+        delta_rows,
+        fieldnames=["subset", "domain_a", "domain_b", "delta_ss", "ci_low", "ci_high", "significant"],
+    )
+
+    plot_ss_bars(summary_rows, layout["plots"])
+    plot_ss_heatmap(summary_rows, layout["plots"])
+
+    metrics = json.loads(layout["metrics"].read_text(encoding="utf-8")) if layout["metrics"].exists() else {}
+    metrics["analysis"] = {
         "bootstrap_samples": args.bootstrap,
-        "note": "Placeholder analyze output. Statistical bootstrap will be added in PR3.",
+        "summary_with_ci": str(summary_with_ci_path.name),
+        "delta_ss": str(delta_ss_path.name),
     }
     write_json(layout["metrics"], metrics)
-    write_summary_csv(
-        layout["summary"],
-        [
-            {"metric": "status", "value": "analyze_bootstrap"},
-            {"metric": "bootstrap_samples", "value": args.bootstrap},
-        ],
-        fieldnames=["metric", "value"],
-    )
+
     print(f"[llm-ss] analyze bootstrap complete: {run_dir}")
     return 0
 
 
 def cmd_report(args: argparse.Namespace) -> int:
     run_dir = Path(args.run_dir)
-    metrics_path = run_dir / "metrics.json"
-    if not metrics_path.exists():
-        print(f"[llm-ss] missing metrics: {metrics_path}")
+    summary_ci_path = run_dir / "summary_with_ci.csv"
+    delta_path = run_dir / "delta_ss.csv"
+
+    if not summary_ci_path.exists():
+        print(f"[llm-ss] missing summary_with_ci: {summary_ci_path}")
         return 1
 
-    metrics = json.loads(metrics_path.read_text(encoding="utf-8"))
+    with summary_ci_path.open("r", encoding="utf-8") as f:
+        summary_rows = list(csv.DictReader(f))
+
+    if delta_path.exists():
+        with delta_path.open("r", encoding="utf-8") as f:
+            delta_rows = list(csv.DictReader(f))
+    else:
+        delta_rows = []
+
     print("[llm-ss] report")
-    print(json.dumps(metrics, indent=2, ensure_ascii=False))
+    for subset in ["intersentence", "intrasentence"]:
+        subset_rows = [r for r in summary_rows if r.get("subset") == subset]
+        if not subset_rows:
+            continue
+        print(f"- {subset}")
+        for row in sorted(subset_rows, key=lambda r: r["domain"]):
+            print(
+                f"  * {row['domain']}: SS={float(row['ss']):.2f} "
+                f"(95% CI {float(row['ss_ci_low']):.2f}, {float(row['ss_ci_high']):.2f})"
+            )
+
+        most_biased = max(subset_rows, key=lambda r: abs(float(r["ss"]) - 50.0))
+        print(
+            f"  most biased domain: {most_biased['domain']} "
+            f"(distance from 50 = {abs(float(most_biased['ss']) - 50.0):.2f})"
+        )
+
+    significant = [
+        row
+        for row in delta_rows
+        if str(row.get("significant", "")).strip().lower() in {"true", "1", "yes"}
+    ]
+    significant.sort(key=lambda r: abs(float(r["delta_ss"])), reverse=True)
+    if significant:
+        print("- top significant delta_ss pairs")
+        for row in significant[:3]:
+            print(
+                f"  * {row['subset']}: {row['domain_a']} - {row['domain_b']} = {float(row['delta_ss']):.2f} "
+                f"(95% CI {float(row['ci_low']):.2f}, {float(row['ci_high']):.2f})"
+            )
+    else:
+        print("- no significant delta_ss pairs")
+
     return 0
 
 
@@ -179,6 +297,7 @@ def build_parser() -> argparse.ArgumentParser:
     analyze_parser = subparsers.add_parser("analyze", help="Analyze an existing run")
     analyze_parser.add_argument("--run_dir", required=True)
     analyze_parser.add_argument("--bootstrap", type=int, default=1000)
+    analyze_parser.add_argument("--seed", type=int, default=42)
     analyze_parser.set_defaults(func=cmd_analyze)
 
     report_parser = subparsers.add_parser("report", help="Print summary report for a run")
