@@ -1,70 +1,40 @@
-<!--
-  Vongole25/University-Projects/README.md
-  → 학부 프로젝트 모음 repo의 메인 README
--->
-
 # University Projects — Korea University, Sejong (2020–2026)
 
-Selected coursework, competition, and research projects from my B.S. in **Big Data Science**
-at Korea University, Sejong Campus. Each subdirectory has its own README with details.
+학부 4년간 수행한 코스워크·공모전·연구 프로젝트 모음.
+**학기별로 정리**해서 분야 발전 timeline 을 한눈에 볼 수 있게 했습니다.
 
 > Author: **Sunjae Lee** · 📝 [Blog](https://it-study-2002.tistory.com/) · ✉ leeseonjae0111@gmail.com
+> 졸업 예정: 2026.6
 
 ---
 
-## 🥇 Competition Projects
+## 📅 학기별 Timeline
 
-### 1. Survival Analysis on Clinical Data — 🥇 1st Place
-**Department Data Analysis Competition**, Korea University Sejong · 2022 · Team
-- Applied **Cox proportional hazards** and parametric survival models to clinical data.
-- Produced interpretable risk stratification and survival curves for outcome prediction.
-- Stack: `R` · `Python` · `lifelines`
+| 학기 | 년도 | 주요 프로젝트 |
+|---|---|---|
+| **[3-1](./3-1/)** | 2022-1 | 서울시 공시지가 예측 |
+| **[3-2](./3-2/)** | 2022-2 | 주가 예측(EC-GBM), 베이지안(가상화폐×날씨) |
+| **[4-1](./4-1/)** | 2023-1 | 챗봇, 강화학습 |
+| **[4-2](./4-2/)** | 2023-2 | 챗봇 v2 (진행 중) |
 
-### 2. Defective Coffee Bean Classification — 🥈 2nd Place
-**T-SUM Data Analysis Competition**, Korea University Sejong · 2023 · Team of 4
-- Image classifier using **EfficientNet-B0** with transfer learning.
-- Handled class imbalance via weighted sampling and on-the-fly augmentation.
-- Stack: `PyTorch` · `EfficientNet` · `Albumentations`
-- 📁 See: [`/computer-vision/coffee-bean-classification`](https://github.com/Vongole25/Computer-Vision)
+## 🏆 Featured Projects (학기 무관, 따로 정리)
 
-### 3. Deepfake Detection — 🥉 3rd Place
-**T-SUM Data Analysis Competition**, Korea University Sejong · 2023 · Team of 4
-- Frame-level CNN feature extraction for binary classification (real vs deepfake).
-- Investigated temporal aggregation across video frames.
-- Stack: `PyTorch` · `OpenCV` · `CNN`
-
-### 4. Biodiversity × Environmental Modeling — Top 9 Finalist
-**National Environment Data Competition**, Ministry of Environment · Team
-- Statistical modeling of species diversity vs environmental variables.
-- Made it to the final 9 out of nation-wide entries.
+### 🥇 [Survival Analysis on Heart Failure](./survival-analysis-heart-failure/)
+**Department Data Analysis Competition · 1st Place** · 2022 · Team
+Cox PH + AFT + ML, 변수 선택, 연령 그룹별 생존 확률. 학과 데이터분석 대회 우승.
 
 ---
 
-## 📚 Coursework Projects
+## 🔗 Related Repos
 
-### 5. Stock Price Prediction with EC-GBM
-- Ensemble gradient boosting (XGBoost / LightGBM) on financial time-series.
-- Feature engineering on technical indicators and lagged returns.
-- Stack: `Python` · `XGBoost` · `LightGBM` · `pandas`
+T-SUM 데이터분석 공모전 수상작 (CV 분야)은 별도 repo:
+- **[Computer-Vision](https://github.com/Vongole25/Computer-Vision)**
+  - 🥈 Deepfake Detection (Video Swin Transformer + Xception+LSTM, **2nd Place**, T-SUM 2025-1)
+  - 🥉 Defective Coffee Bean Classification (EfficientNet, **3rd Place**, T-SUM 2024-2)
 
-### 6. Bayesian Analysis: Cryptocurrency × Weather
-- Bayesian inference exploring cross-domain correlation between weather data and crypto returns.
-- Used PyMC for posterior estimation and HDI visualization.
-- Stack: `PyMC` · `numpy` · `matplotlib`
-
-### 7. Seoul Officially Assessed Land Price Prediction
-- Regression on geospatial and demographic features (zoning, transit access, population).
-- Stack: `Python` · `scikit-learn` · `GeoPandas`
-
----
-
-## 🧪 Research Experience (separate repo)
-
-**Undergraduate Research Assistant** — Big Data Science Lab (Advisor: Prof. Bo-Seung Choi), 2023–2024
-- COVID-19 case counts vs population mobility, modeled with **SARIMAX**.
-- Code & notes not in this repo (research data restricted).
-
----
+NLP 관련 자산은 별도 repo:
+- **[NLP](https://github.com/Vongole25/NLP)**
+  - stereoset_topic_bias (편향 평가, 이전), Annotated Transformer, 졸업 후 추가 예정
 
 ## 🛠 Common Stack
 
@@ -72,23 +42,4 @@ at Korea University, Sejong Campus. Each subdirectory has its own README with de
 
 ---
 
-## 📂 Repo Structure (planned)
-
-```
-University-Projects/
-├── README.md                              (this file)
-├── survival-analysis/
-│   ├── README.md
-│   ├── notebooks/
-│   └── data_description.md
-├── stock-prediction-ec-gbm/
-├── bayesian-crypto-weather/
-├── land-price-prediction/
-└── biodiversity-modeling/
-```
-
-*Defective bean & Deepfake projects live in the [Computer-Vision](https://github.com/Vongole25/Computer-Vision) repo.*
-
----
-
-📌 Currently preparing for **NLP graduate school admission (2027 Spring intake)** — see [my profile](https://github.com/Vongole25).
+📌 Preparing for **NLP graduate school admission (2027 Spring intake)** — see [profile](https://github.com/Vongole25).
