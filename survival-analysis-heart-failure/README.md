@@ -1,6 +1,6 @@
 # Survival Analysis on Heart Failure Clinical Records
 
-> 🥇 **1st Place**, Department Data Analysis Competition · Korea University Sejong (2022) · Team
+> 🥇 **1st Place**, Department Data Analysis Competition · Korea University Sejong (2023) · Team
 
 Predicting death and providing personalized survival probability for heart-failure patients
 by combining **traditional statistics**, **survival models (Cox PH, AFT)**, and
